@@ -1,6 +1,6 @@
 #include "Wheel.h"
 
-Wheel::Wheel(ControllerData *controller_data) : 
+Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles)
 {
     wheel_id = wheel_instance_count;
     wheel_instance_count++;
@@ -19,14 +19,19 @@ Wheel::Wheel(ControllerData *controller_data) :
     motorDriver = new MotorDriver(motor_config);
 
     motorDriver->init();
+
+    this->task_handles = &task_handles->wheel_task_handles[wheel_id];
+
+    this->task_handles->wheel_run_task_handle = nullptr;
+    this->task_handles->PWMDirectControlTaskHandle = nullptr;
 }
 
 Wheel::~Wheel()
 {
     delete motorDriver;
-    if (PWMDirectControlTaskHandle != nullptr)
+    if (task_handles->PWMDirectControlTaskHandle != nullptr)
     {
-        vTaskDelete(PWMDirectControlTaskHandle);
+        vTaskDelete(task_handles->PWMDirectControlTaskHandle);
     }
 }
 
@@ -39,16 +44,16 @@ void Wheel::Run()
         xTaskNotifyWait(0, ULONG_MAX, &receivedFlags, portMAX_DELAY);
         if (receivedFlags & CONTROL_MODE_UPDATE)
         {
-            if (PWMDirectControlTaskHandle != nullptr)
+            if (task_handles->PWMDirectControlTaskHandle != nullptr)
             {
-                vTaskDelete(PWMDirectControlTaskHandle);
+                vTaskDelete(task_handles->PWMDirectControlTaskHandle);
             }
 
             switch (motor_data->controlMode)
             {
             case PWM_DIRECT_CONTROL:
                 xTaskCreate([](void *param)
-                            { static_cast<Wheel *>(param)->PWMDirectControl(); }, "PWMDirectControl", 256, this, 5, &PWMDirectControlTaskHandle);
+                            { static_cast<Wheel *>(param)->PWMDirectControl(); }, "PWMDirectControl", 256, this, 5, &task_handles->PWMDirectControlTaskHandle);
                 break;
 
             default:

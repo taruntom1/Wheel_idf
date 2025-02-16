@@ -26,13 +26,14 @@ private:
     MotorDriverConfig motor_config;
     MotorDriver *motorDriver;
 
-    TaskHandle_t PWMDirectControlTaskHandle;
+    WheelTaskHandles *task_handles;
 
     void PWMDirectControl();
     void Run();
 
 public:
-    Wheel(ControllerData* controller_data);
+    Wheel(ControllerData* controller_data, TaskHandles *task_handles);
+
     ~Wheel();
 
     #define CONTROL_MODE_UPDATE (1 << 0)

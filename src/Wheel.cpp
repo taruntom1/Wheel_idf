@@ -56,7 +56,7 @@ void Wheel::Start()
         ESP_LOGI(TAG, "Starting Wheel run task for instance %d", wheel_id);
         xTaskCreate([](void *param)
                     { static_cast<Wheel *>(param)->Run(); },
-                    "Wheel run task", 2048, this, 5, &task_handles->wheel_run_task_handle);
+                    "Wheel run task", 3000, this, 5, &task_handles->wheel_run_task_handle);
     }
 }
 
@@ -78,7 +78,7 @@ void Wheel::Run()
     while (true)
     {
         xTaskNotifyWait(0, ULONG_MAX, &receivedFlags, portMAX_DELAY);
-        ESP_LOGD(TAG, "Wheel %d received notification: %u", wheel_id, receivedFlags);
+
 
         if (receivedFlags & CONTROL_MODE_UPDATE)
         {
@@ -94,7 +94,7 @@ void Wheel::Run()
             case PWM_DIRECT_CONTROL:
                 ESP_LOGI(TAG, "Wheel %d entering PWM Direct Control mode", wheel_id);
                 xTaskCreate([](void *param)
-                            { static_cast<Wheel *>(param)->PWMDirectControl(); }, "PWMDirectControl", 2048, this, 5, &task_handles->PWMDirectControlTaskHandle);
+                            { static_cast<Wheel *>(param)->PWMDirectControl(); }, "PWMDirectControl", 2500, this, 5, &task_handles->PWMDirectControlTaskHandle);
                 break;
 
             default:

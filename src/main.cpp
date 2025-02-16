@@ -4,47 +4,22 @@
 #include "Wheel.h"
 #include "MyStructs.h" // Make sure this defines ControllerData, TaskHandles, etc.
 
-/* // For this test, we assume something like:
-enum ControlMode {
-    DEFAULT_MODE = 0,
-    PWM_DIRECT_CONTROL = 1,
-};
+void printTaskInfo()
+{
+    char buffer[512]; // Buffer to hold task list output
+    vTaskList(buffer);
+    ESP_LOGI("TASKS", "\nTask Name\tState\tPrio\tStack Left\tTask Num\n%s", buffer);
+}
 
+void monitorTask(void *pvParameters)
+{
+    while (1)
+    {
+        printTaskInfo();
+        vTaskDelay(pdMS_TO_TICKS(2000)); // Print every 5 seconds
+    }
+}
 
-
-// Dummy definitions (adjust to your actual definitions)
-struct MotorConnections {
-    int dirPin;
-    int pwmPin;
-};
-
-struct MotorData {
-    ControlMode controlMode;
-    int pwmValue;
-    MotorConnections motorConnections;
-};
-
-struct ControllerProperties {
-    uint32_t anglePIDFrequency;
-    uint32_t speedPIDFrequency;
-    uint32_t pwmUpdateFrequency;
-};
-
-struct ControllerData {
-    ControllerProperties controllerProperties;
-    // Assume we have at least one wheel (index 0)
-    MotorData motorData[1];
-};
-
-struct WheelTaskHandles {
-    TaskHandle_t wheel_run_task_handle;
-    TaskHandle_t PWMDirectControlTaskHandle;
-};
-
-struct TaskHandles {
-    // For our test, we only need one wheel task handle.
-    WheelTaskHandles wheel_task_handles[1];
-}; */
 static const char *TAG = "WheelTest";
 extern "C" void app_main(void)
 {
@@ -79,6 +54,9 @@ extern "C" void app_main(void)
 
     // Wait briefly to ensure the Run task is created.
     vTaskDelay(pdMS_TO_TICKS(1000));
+
+    // Create a monitor task to check the status of all tasks.
+    xTaskCreate(monitorTask, "MonitorTask", 4096, NULL, 1, NULL);
 
     // --- Phase 1: PWM_DIRECT_CONTROL ---
     // Set the control mode to PWM_DIRECT_CONTROL.

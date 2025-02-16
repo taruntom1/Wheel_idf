@@ -17,7 +17,7 @@ struct LoopDelays
 class Wheel
 {
 private:
-    inline static uint32_t wheel_instance_count = 0;
+    inline static uint8_t wheel_instance_count = 0;
     uint8_t wheel_id;
 
     LoopDelays loop_delays;

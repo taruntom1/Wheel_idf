@@ -78,7 +78,7 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "Wheel task started");
 
     // Wait briefly to ensure the Run task is created.
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(1000));
 
     // --- Phase 1: PWM_DIRECT_CONTROL ---
     // Set the control mode to PWM_DIRECT_CONTROL.

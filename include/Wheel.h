@@ -17,11 +17,11 @@ struct LoopDelays
 class Wheel
 {
 private:
-    static uint8_t wheel_instance_count;
+    inline static uint32_t wheel_instance_count = 0;
     uint8_t wheel_id;
 
     LoopDelays loop_delays;
-    MotorData* motor_data;
+    MotorData *motor_data;
 
     MotorDriverConfig motor_config;
     MotorDriver *motorDriver;
@@ -30,18 +30,16 @@ private:
 
     void PWMDirectControl();
 
-    #define CONTROL_MODE_UPDATE (1 << 0)
+#define CONTROL_MODE_UPDATE (1 << 0)
     void Run();
 
 public:
-    Wheel(ControllerData* controller_data, TaskHandles *task_handles);
+    Wheel(ControllerData *controller_data, TaskHandles *task_handles);
 
     ~Wheel();
 
     void Start();
     void Stop();
-
-    
 };
 
 #endif // WHEEL_H

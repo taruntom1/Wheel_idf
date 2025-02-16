@@ -29,6 +29,8 @@ private:
     WheelTaskHandles *task_handles;
 
     void PWMDirectControl();
+
+    #define CONTROL_MODE_UPDATE (1 << 0)
     void Run();
 
 public:
@@ -36,7 +38,9 @@ public:
 
     ~Wheel();
 
-    #define CONTROL_MODE_UPDATE (1 << 0)
+    void Start();
+    void Stop();
+
     
 };
 

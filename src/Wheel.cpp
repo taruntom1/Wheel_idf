@@ -32,6 +32,32 @@ Wheel::~Wheel()
     if (task_handles->PWMDirectControlTaskHandle != nullptr)
     {
         vTaskDelete(task_handles->PWMDirectControlTaskHandle);
+        task_handles->PWMDirectControlTaskHandle = nullptr;
+    }
+
+    if (task_handles->wheel_run_task_handle != nullptr)
+    {
+        vTaskDelete(task_handles->wheel_run_task_handle);
+        task_handles->wheel_run_task_handle = nullptr;
+    }
+}
+
+void Wheel::Start()
+{
+    if (task_handles->wheel_run_task_handle == nullptr)
+    { // Prevent duplicate tasks
+        xTaskCreate([](void *param)
+                    { static_cast<Wheel *>(param)->Run(); },
+                    "Wheel run task", 1024, this, 5, &task_handles->wheel_run_task_handle);
+    }
+}
+
+void Wheel::Stop()
+{
+    if (task_handles->wheel_run_task_handle != nullptr)
+    {
+        vTaskDelete(task_handles->wheel_run_task_handle);
+        task_handles->wheel_run_task_handle = nullptr;
     }
 }
 

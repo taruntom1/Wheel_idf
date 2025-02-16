@@ -1,6 +1,6 @@
 #include "Wheel.h"
 
-Wheel::Wheel(ControllerData *controller_data)
+Wheel::Wheel(ControllerData *controller_data) : 
 {
     wheel_id = wheel_instance_count;
     wheel_instance_count++;
@@ -24,21 +24,22 @@ Wheel::Wheel(ControllerData *controller_data)
 Wheel::~Wheel()
 {
     delete motorDriver;
+    if (PWMDirectControlTaskHandle != nullptr)
+    {
+        vTaskDelete(PWMDirectControlTaskHandle);
+    }
 }
 
-
-void Wheel::Run(void *pvParameter)
+void Wheel::Run()
 {
     uint32_t receivedFlags;
-
-    TaskHandle_t PWMDirectControlTaskHandle = NULL;
 
     while (true)
     {
         xTaskNotifyWait(0, ULONG_MAX, &receivedFlags, portMAX_DELAY);
         if (receivedFlags & CONTROL_MODE_UPDATE)
         {
-            if (PWMDirectControlTaskHandle != NULL)
+            if (PWMDirectControlTaskHandle != nullptr)
             {
                 vTaskDelete(PWMDirectControlTaskHandle);
             }

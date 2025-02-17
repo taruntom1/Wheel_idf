@@ -27,13 +27,14 @@ extern "C" void app_main(void)
 
     // Setup dummy ControllerData with frequencies and initial motor settings.
     ControllerData controller_data = {};
-    controller_data.controllerProperties.anglePIDFrequency = 50;   // 50 Hz (20ms period)
-    controller_data.controllerProperties.speedPIDFrequency = 50;   // 50 Hz
-    controller_data.controllerProperties.pwmUpdateFrequency = 100; // 100 Hz (10ms period)
+
 
     // Initialize motor data for wheel 0.
     controller_data.motorData = new MotorData[1];
 
+    controller_data.motorData[0].updateFrequenciesWheel.anglePID = 50;   // 50 Hz (20ms period)
+    controller_data.motorData[0].updateFrequenciesWheel.speedPID = 50;   // 50 Hz
+    controller_data.motorData[0].updateFrequenciesWheel.pwm = 100; // 100 Hz (10ms period)
     controller_data.motorData[0].controlMode = PWM_DIRECT_CONTROL;
     controller_data.motorData[0].pwmValue = 500; // Example PWM value (range assumed 0-1000)
     controller_data.motorData[0].motorConnections.dirPin = 18;

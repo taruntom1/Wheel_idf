@@ -1,8 +1,6 @@
 #include "Wheel.h"
 #include "esp_log.h"
 
-static const char *TAG = "Wheel";
-
 Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles)
 {
     ESP_LOGI(TAG, "Initializing Wheel instance %d", wheel_instance_count);
@@ -11,20 +9,29 @@ Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles)
     wheel_instance_count++;
 
     this->motor_data = &controller_data->motorData[wheel_id];
-    this->loop_delays.anglePID = 1000 / controller_data->controllerProperties.anglePIDFrequency;
-    this->loop_delays.speedPID = 1000 / controller_data->controllerProperties.speedPIDFrequency;
-    this->loop_delays.PWM = 1000 / controller_data->controllerProperties.pwmUpdateFrequency;
 
-    motor_config = {
+    this->loop_delays.anglePID = 1000 / this->motor_data->updateFrequenciesWheel.anglePID;
+    this->loop_delays.speedPID = 1000 / this->motor_data->updateFrequenciesWheel.speedPID;
+    this->loop_delays.PWM = 1000 / this->motor_data->updateFrequenciesWheel.pwm;
+    this->loop_delays.encoder = 1000 / controller_data->controllerProperties.odoBroadcastFrequency;
+
+    // Initialize the motor driver
+    this->motor_config = {
         .directionPin = (gpio_num_t)motor_data->motorConnections.dirPin,
         .pwmPin = (gpio_num_t)motor_data->motorConnections.pwmPin,
         .clockFrequencyHz = 1000000,
         .pwmResolution = 1000};
 
-    motorDriver = new MotorDriver(motor_config);
-
+    motorDriver = new MotorDriver(this->motor_config);
     motorDriver->init();
     ESP_LOGI(TAG, "MotorDriver initialized for Wheel %d", wheel_id);
+
+    // Initialize the encoder
+    this->encoder_config = {
+        .channel_config = {
+            .edge_gpio_num = (gpio_num_t)motor_data->motorConnections.encPinA,
+            .level_gpio_num = (gpio_num_t)motor_data->motorConnections.encPinB}};
+    encoder = new EncoderPulseReader(&this->encoder_config);
 
     this->task_handles = &task_handles->wheel_task_handles[wheel_id];
     this->task_handles->wheel_run_task_handle = nullptr;
@@ -79,7 +86,6 @@ void Wheel::Run()
     {
         xTaskNotifyWait(0, ULONG_MAX, &receivedFlags, portMAX_DELAY);
 
-
         if (receivedFlags & CONTROL_MODE_UPDATE)
         {
             ESP_LOGI(TAG, "Wheel %d updating control mode", wheel_id);
@@ -102,6 +108,23 @@ void Wheel::Run()
                 break;
             }
         }
+
+        if (receivedFlags & ODO_BROADCAST_STATUS_UPDATE)
+        {
+            ESP_LOGI(TAG, "Wheel %d changing ODO Broadcast Status", wheel_id);
+            if (task_handles->OdoBroadcast != nullptr)
+            {
+                vTaskDelete(task_handles->OdoBroadcast);
+                task_handles->OdoBroadcast = nullptr;
+            }
+            if (motor_data->odoBroadcastStatus.angleBroadcast ||
+                motor_data->odoBroadcastStatus.speedBroadcast)
+            {
+                ESP_LOGI(TAG, "Wheel %d starting ODO Broadcast", wheel_id);
+                xTaskCreate([](void *param)
+                            { static_cast<Wheel *>(param)->OdoBroadcast(); }, "OdoBroadcastTask", 2500, this, 5, &task_handles->OdoBroadcast);
+            }
+        }
     }
 }
 
@@ -114,5 +137,24 @@ void Wheel::PWMDirectControl()
         ESP_LOGV(TAG, "Wheel %d setting speed: %.3f", wheel_id, speed);
         motorDriver->setSpeed(speed);
         vTaskDelay(pdMS_TO_TICKS(loop_delays.PWM));
+    }
+}
+
+void Wheel::OdoBroadcast()
+{
+    ESP_LOGI(TAG, "Wheel %d encoder update task started", wheel_id);
+    while (true)
+    {
+        if (motor_data->odoBroadcastStatus.angleBroadcast)
+        {
+            encoder->get_pulse_count(&motor_data->odometryData.angle);
+            ESP_LOGV(TAG, "Wheel %d angle: %d", wheel_id, motor_data->odometryData.angle);
+        }
+        if (motor_data->odoBroadcastStatus.speedBroadcast)
+        {
+            encoder->get_raw_velocity(&motor_data->odometryData.rpm);
+            ESP_LOGV(TAG, "Wheel %d rpm: %.3f", wheel_id, motor_data->odometryData.rpm);
+        }
+        vTaskDelay(pdMS_TO_TICKS(loop_delays.encoder));
     }
 }

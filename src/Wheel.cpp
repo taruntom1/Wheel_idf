@@ -41,7 +41,7 @@ Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles)
 Wheel::~Wheel()
 {
     ESP_LOGI(TAG, "Destroying Wheel instance %d", wheel_id);
-    delete motorDriver;
+
     if (task_handles->PWMDirectControlTaskHandle != nullptr)
     {
         vTaskDelete(task_handles->PWMDirectControlTaskHandle);
@@ -53,6 +53,13 @@ Wheel::~Wheel()
         vTaskDelete(task_handles->wheel_run_task_handle);
         task_handles->wheel_run_task_handle = nullptr;
     }
+    if (task_handles->OdoBroadcast != nullptr)
+    {
+        vTaskDelete(task_handles->OdoBroadcast);
+        task_handles->OdoBroadcast = nullptr;
+    }
+    delete motorDriver;
+    delete encoder;
     ESP_LOGI(TAG, "Wheel instance %d destroyed", wheel_id);
 }
 
@@ -121,6 +128,7 @@ void Wheel::Run()
                 motor_data->odoBroadcastStatus.speedBroadcast)
             {
                 ESP_LOGI(TAG, "Wheel %d starting ODO Broadcast", wheel_id);
+                encoder->start_pulse_counter();
                 xTaskCreate([](void *param)
                             { static_cast<Wheel *>(param)->OdoBroadcast(); }, "OdoBroadcastTask", 2500, this, 5, &task_handles->OdoBroadcast);
             }

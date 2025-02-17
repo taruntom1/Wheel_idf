@@ -2,7 +2,8 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "Wheel.h"
-#include "MyStructs.h" // Make sure this defines ControllerData, TaskHandles, etc.
+#include "MyStructs.h" // Ensure it defines ControllerData, TaskHandles, etc.
+#include <iostream>
 
 void printTaskInfo()
 {
@@ -16,7 +17,7 @@ void monitorTask(void *pvParameters)
     while (1)
     {
         printTaskInfo();
-        vTaskDelay(pdMS_TO_TICKS(2000)); // Print every 5 seconds
+        vTaskDelay(pdMS_TO_TICKS(2000)); // Print every 2 seconds
     }
 }
 
@@ -25,59 +26,68 @@ extern "C" void app_main(void)
 {
     ESP_LOGI(TAG, "Starting Wheel Test");
 
-    // Setup dummy ControllerData with frequencies and initial motor settings.
+    // Setup ControllerData with motor and odometry settings.
     ControllerData controller_data = {};
-
-
-    // Initialize motor data for wheel 0.
     controller_data.motorData = new MotorData[1];
-
-    controller_data.motorData[0].updateFrequenciesWheel.anglePID = 50;   // 50 Hz (20ms period)
-    controller_data.motorData[0].updateFrequenciesWheel.speedPID = 50;   // 50 Hz
-    controller_data.motorData[0].updateFrequenciesWheel.pwm = 100; // 100 Hz (10ms period)
+    
+    controller_data.motorData[0].updateFrequenciesWheel.anglePID = 50;
+    controller_data.motorData[0].updateFrequenciesWheel.speedPID = 50;
+    controller_data.motorData[0].updateFrequenciesWheel.pwm = 100;
     controller_data.motorData[0].controlMode = PWM_DIRECT_CONTROL;
-    controller_data.motorData[0].pwmValue = 500; // Example PWM value (range assumed 0-1000)
+    controller_data.motorData[0].pwmValue = 500;
     controller_data.motorData[0].motorConnections.dirPin = 18;
     controller_data.motorData[0].motorConnections.pwmPin = 19;
-
-    // Setup dummy TaskHandles.
+    controller_data.motorData[0].motorConnections.encPinA = 20;
+    controller_data.motorData[0].motorConnections.encPinB = 21;
+    
+    // Enable odometry broadcasting
+    controller_data.motorData[0].odoBroadcastStatus.angleBroadcast = true;
+    controller_data.motorData[0].odoBroadcastStatus.speedBroadcast = true;
+    controller_data.controllerProperties.odoBroadcastFrequency = 10; // 10 Hz
+    
+    // Setup TaskHandles
     TaskHandles task_handles = {};
     task_handles.wheel_task_handles = new WheelTaskHandles[1];
     task_handles.wheel_task_handles[0].wheel_run_task_handle = nullptr;
     task_handles.wheel_task_handles[0].PWMDirectControlTaskHandle = nullptr;
+    task_handles.wheel_task_handles[0].OdoBroadcast = nullptr;
+    
     ESP_LOGI(TAG, "All values set up correctly. Starting tasks now...");
-    // Create the Wheel instance.
+
+    // Create the Wheel instance
     Wheel *wheel = new Wheel(&controller_data, &task_handles);
     ESP_LOGI(TAG, "Object created successfully. Initializing wheel now...");
-    // Start the wheel's main task.
+    
     wheel->Start();
     ESP_LOGI(TAG, "Wheel task started");
 
-    // Wait briefly to ensure the Run task is created.
+    // Wait to ensure the Run task is created.
     vTaskDelay(pdMS_TO_TICKS(1000));
 
-    // Create a monitor task to check the status of all tasks.
+    // Start monitoring task
     xTaskCreate(monitorTask, "MonitorTask", 4096, NULL, 1, NULL);
 
     // --- Phase 1: PWM_DIRECT_CONTROL ---
-    // Set the control mode to PWM_DIRECT_CONTROL.
     controller_data.motorData[0].controlMode = PWM_DIRECT_CONTROL;
     ESP_LOGI(TAG, "Sending notification to start PWM_DIRECT_CONTROL");
-    // Notify the Wheel::Run task.
-    xTaskNotify(task_handles.wheel_task_handles[0].wheel_run_task_handle,
-                CONTROL_MODE_UPDATE, eSetBits);
-
-    // Let it run in PWM_DIRECT_CONTROL mode for 10 seconds.
+    xTaskNotify(task_handles.wheel_task_handles[0].wheel_run_task_handle, CONTROL_MODE_UPDATE, eSetBits);
     vTaskDelay(pdMS_TO_TICKS(10000));
 
-    // --- Phase 2: Default control (i.e. no PWM direct control task) ---
-    // Change the control mode to default.
+    // --- Phase 2: ODO_BROADCAST_STATUS_UPDATE ---
+    ESP_LOGI(TAG, "Sending notification to start OdoBroadcast");
+    xTaskNotify(task_handles.wheel_task_handles[0].wheel_run_task_handle, ODO_BROADCAST_STATUS_UPDATE, eSetBits);
+    for(int i = 0; i < 100; i++){
+        std::cout << "Angle : " << controller_data.motorData[0].odometryData.angle << "\t";
+        std::cout << "speed : " << controller_data.motorData[0].odometryData.rpm << "\t";
+        std::cout << "pwm : " << controller_data.motorData[0].pwmValue << std::endl;
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    
+
+    // --- Phase 3: Default control mode ---
     controller_data.motorData[0].controlMode = OFF;
     ESP_LOGI(TAG, "Sending notification to revert to default control mode");
-    xTaskNotify(task_handles.wheel_task_handles[0].wheel_run_task_handle,
-                CONTROL_MODE_UPDATE, eSetBits);
-
-    // Wait for 5 seconds.
+    xTaskNotify(task_handles.wheel_task_handles[0].wheel_run_task_handle, CONTROL_MODE_UPDATE, eSetBits);
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     // --- Cleanup ---
@@ -86,7 +96,6 @@ extern "C" void app_main(void)
     delete wheel;
     ESP_LOGI(TAG, "Wheel instance deleted, test complete");
 
-    // Optionally keep app_main running (or exit if appropriate).
     while (true)
     {
         vTaskDelay(pdMS_TO_TICKS(1000));

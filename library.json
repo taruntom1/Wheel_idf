@@ -1,0 +1,15 @@
+{
+    "name": "Wheel",
+    "version": "0.1.0",
+    "description": "Class for wheel",
+
+    "authors": [
+      {
+        "name": "Tarun Tom",
+        "email": "taruntom1@gmail.com",
+        "maintainer": true
+      }
+    ],
+    "license": "MIT"
+  }
+  

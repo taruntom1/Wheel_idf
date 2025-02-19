@@ -124,8 +124,9 @@ void Wheel::Run()
                 vTaskDelete(task_handles->OdoBroadcast);
                 task_handles->OdoBroadcast = nullptr;
             }
-            if (motor_data->odoBroadcastStatus.angleBroadcast ||
-                motor_data->odoBroadcastStatus.speedBroadcast)
+            if ((motor_data->odoBroadcastStatus.angleBroadcast ||
+                 motor_data->odoBroadcastStatus.speedBroadcast) &&
+                motor_data->controlMode == PWM_DIRECT_CONTROL)
             {
                 ESP_LOGI(TAG, "Wheel %d starting ODO Broadcast", wheel_id);
                 encoder->start_pulse_counter();

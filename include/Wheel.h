@@ -21,7 +21,6 @@ class Wheel
 private:
     const char *TAG = "Wheel";
 
-    inline static uint8_t wheel_instance_count = 0;
     uint8_t wheel_id;
 
     LoopDelays loop_delays;
@@ -41,7 +40,8 @@ private:
     void Run();
 
 public:
-    Wheel(ControllerData *controller_data, TaskHandles *task_handles);
+    Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t wheel_id);
+
     ~Wheel();
 
     void Start();

@@ -1,12 +1,10 @@
 #include "Wheel.h"
 #include "esp_log.h"
 
-Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles)
-{
-    ESP_LOGI(TAG, "Initializing Wheel instance %d", wheel_instance_count);
+Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t wheel_id) : wheel_id(wheel_id)
 
-    wheel_id = wheel_instance_count;
-    wheel_instance_count++;
+{
+    ESP_LOGI(TAG, "Initializing Wheel instance %d", wheel_id);
 
     this->motor_data = &controller_data->motorData[wheel_id];
 

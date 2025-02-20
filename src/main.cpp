@@ -55,7 +55,7 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "All values set up correctly. Starting tasks now...");
 
     // Create the Wheel instance
-    Wheel *wheel = new Wheel(&controller_data, &task_handles);
+    Wheel *wheel = new Wheel(&controller_data, &task_handles, 0);
     ESP_LOGI(TAG, "Object created successfully. Initializing wheel now...");
     
     wheel->Start();

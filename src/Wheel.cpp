@@ -28,8 +28,8 @@ Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t
     ESP_LOGD(TAG, "Initializing encoder configuration for Wheel %d", wheel_id);
     this->encoder_config = {
         .channel_config = {
-            .edge_gpio_num = (gpio_num_t)motor_data->motorConnections.encPinA,
-            .level_gpio_num = (gpio_num_t)motor_data->motorConnections.encPinB}};
+            .edge_gpio_num = (gpio_num_t)this->motor_data->motorConnections.encPinA,
+            .level_gpio_num = (gpio_num_t)this->motor_data->motorConnections.encPinB}};
     ESP_LOGD(TAG, "Creating EncoderPulseReader object for Wheel %d", wheel_id);
     encoder = new EncoderPulseReader(&this->encoder_config);
 

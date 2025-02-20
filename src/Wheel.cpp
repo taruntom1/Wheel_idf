@@ -25,7 +25,7 @@ Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t
     ESP_LOGI(TAG, "MotorDriver initialized for Wheel %d", wheel_id);
 
     // Initialize the encoder
-    ESP_LOGD(TAG, "Initializing encoder configuration for Wheel %d", wheel_id);
+    ESP_LOGD(TAG, "Initializing encoder configuration for Wheel %d with GPIOs %d and %d", wheel_id,this->motor_data->motorConnections.encPinA,this->motor_data->motorConnections.encPinB );
     this->encoder_config = {
         .channel_config = {
             .edge_gpio_num = (gpio_num_t)this->motor_data->motorConnections.encPinA,

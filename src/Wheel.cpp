@@ -31,6 +31,8 @@ Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t
             .level_gpio_num = (gpio_num_t)motor_data->motorConnections.encPinB}};
     encoder = new EncoderPulseReader(&this->encoder_config);
 
+    ESP_LOGI(TAG, "Encoder initialized for Wheel %d", wheel_id);
+
     this->task_handles = &task_handles->wheel_task_handles[wheel_id];
     this->task_handles->wheel_run_task_handle = nullptr;
     this->task_handles->PWMDirectControlTaskHandle = nullptr;

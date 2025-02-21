@@ -36,6 +36,7 @@ Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t
 
     this->task_handles = &task_handles->wheel_task_handles[wheel_id];
     this->task_handles->wheel_run_task_handle = nullptr;
+    this->task_handles->OdoBroadcast = nullptr;
     this->task_handles->PWMDirectControlTaskHandle = nullptr;
 
     // Start the wheel run task

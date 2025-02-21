@@ -2,7 +2,6 @@
 #include "esp_log.h"
 
 Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t wheel_id) : wheel_id(wheel_id)
-
 {
     ESP_LOGI(TAG, "Initializing Wheel instance %d", wheel_id);
 
@@ -38,6 +37,12 @@ Wheel::Wheel(ControllerData *controller_data, TaskHandles *task_handles, uint8_t
     this->task_handles = &task_handles->wheel_task_handles[wheel_id];
     this->task_handles->wheel_run_task_handle = nullptr;
     this->task_handles->PWMDirectControlTaskHandle = nullptr;
+
+    // Start the wheel run task
+    ESP_LOGI(TAG, "Starting Wheel run task for instance %d", wheel_id);
+    xTaskCreate([](void *param)
+                { static_cast<Wheel *>(param)->Run(); },
+                "Wheel run task", 3000, this, 5, &this->task_handles->wheel_run_task_handle);
 }
 
 Wheel::~Wheel()
@@ -52,6 +57,7 @@ Wheel::~Wheel()
 
     if (task_handles->wheel_run_task_handle != nullptr)
     {
+        ESP_LOGI(TAG, "Stopping Wheel run task for instance %d", wheel_id);
         vTaskDelete(task_handles->wheel_run_task_handle);
         task_handles->wheel_run_task_handle = nullptr;
     }
@@ -63,27 +69,6 @@ Wheel::~Wheel()
     delete motorDriver;
     delete encoder;
     ESP_LOGI(TAG, "Wheel instance %d destroyed", wheel_id);
-}
-
-void Wheel::Start()
-{
-    if (task_handles->wheel_run_task_handle == nullptr)
-    { // Prevent duplicate tasks
-        ESP_LOGI(TAG, "Starting Wheel run task for instance %d", wheel_id);
-        xTaskCreate([](void *param)
-                    { static_cast<Wheel *>(param)->Run(); },
-                    "Wheel run task", 3000, this, 5, &task_handles->wheel_run_task_handle);
-    }
-}
-
-void Wheel::Stop()
-{
-    if (task_handles->wheel_run_task_handle != nullptr)
-    {
-        ESP_LOGI(TAG, "Stopping Wheel run task for instance %d", wheel_id);
-        vTaskDelete(task_handles->wheel_run_task_handle);
-        task_handles->wheel_run_task_handle = nullptr;
-    }
 }
 
 void Wheel::Run()

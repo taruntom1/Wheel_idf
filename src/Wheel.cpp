@@ -80,6 +80,7 @@ void Wheel::Run()
     while (true)
     {
         xTaskNotifyWait(0, ULONG_MAX, &receivedFlags, portMAX_DELAY);
+        ESP_LOGD(TAG, "Received Notification");
 
         if (receivedFlags & CONTROL_MODE_UPDATE)
         {
